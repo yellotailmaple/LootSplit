@@ -6,7 +6,7 @@
 <title>길드 분배 · 교환/택배 수수료 계산기</title>
 <style>
   :root {
-    --card-bg: rgba(255,255,255,0.88);
+    --card-bg: rgba(255,255,255,0.86);
     --muted: #666;
     --accent: #0a7cff;
     --radius: 16px;
@@ -17,13 +17,16 @@
     background: #0b1220;
     color: #0b1220;
   }
+  /* 흐릿하고 살짝 어둡게 배경 노출 */
   body::before {
     content: "";
     position: fixed; inset: 0;
     background: url("./musicbg.jpg") center/cover no-repeat;
-    filter: brightness(0.45);
+    filter: blur(4px) brightness(0.28);
+    transform: scale(1.03); /* 블러 테두리 보정 */
     z-index: -1;
   }
+
   .wrap {
     max-width: 1100px; margin: 24px auto; padding: 16px;
   }
@@ -81,10 +84,6 @@
     background: #f6f9fe; font-weight: 700; padding: 10px; text-align: right;
   }
   .right { text-align: right; }
-  .badge {
-    display: inline-block; background: #111827; color: #fff; padding: 2px 8px; border-radius: 999px; font-size: 12px; margin-left: 6px;
-  }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
   .section-title { font-weight: 800; margin: 8px 0 12px; }
   .hr { height: 1px; background: #e9edf4; margin: 12px 0; }
   .danger { color: #b91c1c; font-weight: 700; }
@@ -92,7 +91,7 @@
 </head>
 <body>
   <div class="wrap">
-    <div class="title">길드 분배 · 교환/택배 수수료 계산기 <span class="badge">GitHub Pages</span></div>
+    <div class="title">길드 분배 · 교환/택배 수수료 계산기</div>
 
     <!-- 분배/수수료 설정 -->
     <div class="card">
@@ -100,12 +99,12 @@
         <div>
           <label>총 분배 금액 (메소 또는 원)</label>
           <input id="totalAmount" type="number" min="0" step="1" placeholder="예: 120000000" value="120000000"/>
-          <div class="hint">예: 전리품 판매총액, 혹은 이미 현금화된 금액</div>
+          <div class="muted">예: 전리품 판매 총액</div>
         </div>
         <div>
-          <label>참가자 & 비율 (쉼표 구분 “이름:비율%”)</label>
-          <textarea id="participants" rows="4" placeholder="예: A:50, B:30, C:20">A:50, B:30, C:20</textarea>
-          <div class="hint">합계 100% 기준. 필요시 소수점 비율도 가능 (예: 33.3)</div>
+          <label>참가자 (쉼표/줄바꿈 — <b>이름</b> 또는 <b>이름:비율%</b>)</label>
+          <textarea id="participants" rows="4" placeholder="예: A:10%, B, C">A:50, B:30, C:20</textarea>
+          <div class="muted">비율을 쓴 항목은 고정, 나머지는 <b>남은 퍼센트</b>를 <b>동일 분배</b>합니다.</div>
         </div>
         <div>
           <label>교환(직거래) 수수료 구간 · 요율(%)</label>
@@ -118,17 +117,15 @@ Infinity:4">999999:6
 4999999:5
 9999999:4
 Infinity:4</textarea>
-          <div class="hint">
-            예시는 “금액 ≤ 99만 9999 ▶ 6% / ≤ 499만 9999 ▶ 5% / ≤ 999만 9999 ▶ 4% / 그 이상 ▶ 4%” 의미.
-          </div>
+          <div class="muted">예: ≤ 99만 9999 ▶ 6% / ≤ 499만 9999 ▶ 5% / ≤ 999만 9999 ▶ 4% / 그 이상 ▶ 4%</div>
         </div>
       </div>
 
       <div class="grid cols-2">
         <div>
-          <label>교환(직거래) 수수료 최소화를 위한 분할 단위(쉼표/공백 구분)</label>
+          <label>교환(직거래) 수수료 최소화를 위한 분할 단위(쉼표/공백)</label>
           <input id="splitUnits" type="text" value="9999999, 4999999, 999999" />
-          <div class="hint">왼쪽부터 우선 적용. 예: 9,999,999 → 4,999,999 → 999,999 → 나머지</div>
+          <div class="muted">왼쪽부터 우선 적용. 예: 9,999,999 → 4,999,999 → 999,999 → 나머지</div>
         </div>
         <div>
           <label>택배 고정 수수료 (일반/특급)</label>
@@ -136,36 +133,46 @@ Infinity:4</textarea>
             <input id="parcelFlatNormal" type="number" min="0" step="1" value="5000" />
             <input id="parcelFlatExpress" type="number" min="0" step="1" value="20000" />
           </div>
-          <div class="hint">택배 수수료는 <b>발신자 부담</b>, 수신자는 배정액 그대로 수령</div>
+          <div class="muted">택배 고정 비용</div>
         </div>
       </div>
 
-      <div class="row" style="margin-top:10px">
-        <button onclick="compute()">계산하기</button>
-        <button class="ghost" onclick="fillDemo()">데모 채우기</button>
+      <div class="grid cols-3" style="margin-top:8px">
+        <div>
+          <label>정산 방식 보기</label>
+          <select id="mode">
+            <option value="all">모두 보기</option>
+            <option value="exchange">교환(직거래)</option>
+            <option value="parcel_normal">택배 — 일반</option>
+            <option value="parcel_express">택배 — 특급</option>
+          </select>
+        </div>
+        <div>
+          <label>택배 수수료 부담</label>
+          <select id="parcelChargeMode">
+            <option value="sender">발신자 부담(수신자 차감 없음)</option>
+            <option value="receiver_equal">수신자 균등 분담</option>
+            <option value="receiver_proportional">수신자 비율 분담</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:end;gap:10px">
+          <button onclick="compute()">계산하기</button>
+          <button class="ghost" onclick="fillDemo()">데모 채우기</button>
+        </div>
       </div>
     </div>
 
     <!-- 결과 표 -->
     <div class="card" id="resultCard" style="display:none">
       <div class="section-title">분배 결과표</div>
-      <div class="muted">“직거래(교환)”은 수신자 부담 수수료, “택배”는 발신자 부담 + 고정 수수료(일반/특급)</div>
+      <div class="muted">교환은 수신자 부담, 택배는 위의 “택배 수수료 부담” 선택에 따릅니다.</div>
       <div class="hr"></div>
       <div style="overflow:auto">
         <table id="resultTable">
-          <thead>
-            <tr>
-              <th>참가자</th>
-              <th>비율</th>
-              <th>배정액</th>
-              <th>직거래(교환) 수령</th>
-              <th>택배 일반 수령</th>
-              <th>택배 특급 수령</th>
-            </tr>
-          </thead>
+          <thead></thead>
           <tbody></tbody>
           <tfoot>
-            <tr><td colspan="6" id="senderCostRow" class="right">발신자 총비용(택배): -</td></tr>
+            <tr><td colspan="6" id="senderCostRow" class="right">-</td></tr>
           </tfoot>
         </table>
       </div>
@@ -180,33 +187,40 @@ Infinity:4</textarea>
     <!-- 디스코드 공유 -->
     <div class="card">
       <div class="section-title">디스코드 공유</div>
-      <div class="muted">보안을 위해 프론트에서 Webhook을 직접 호출하지 않습니다. 아래 두 방법 중 하나를 추천합니다.</div>
-      <ul class="muted">
-        <li><b>A안(권장)</b> GitHub Actions가 저장소 시크릿에 보관된 <code>DISCORD_WEBHOOK</code>으로 전송</li>
-        <li><b>B안</b> Cloudflare Workers/Netlify Functions 등 프록시 경유</li>
-      </ul>
+      <div class="muted">보안을 위해 Webhook/봇 토큰은 클라이언트 코드에 넣지 마세요. 프록시(Cloudflare Workers 등)나 GitHub Actions로 전송하는 것을 권장합니다.</div>
       <div class="row">
         <button onclick="copyDiscordPayload()">디스코드 Embed Payload 복사</button>
         <button class="ghost" onclick="copyJSON()">표 JSON 복사</button>
       </div>
-      <div class="hint" style="margin-top:6px">복사 후, GitHub Actions 또는 프록시에 전달해 게시탭(포럼/스레드) 또는 일반 채널에 게시하세요.</div>
-      <div class="hint"><span class="danger">주의:</span> Webhook/봇 토큰을 클라이언트 코드에 절대 넣지 마세요(GitHub Pages는 공개됩니다).</div>
     </div>
   </div>
 
 <script>
   const fmt = n => n.toLocaleString('ko-KR');
+  const clamp0 = n => Math.max(0, Math.floor(n));
 
-  function parseParticipants(text) {
-    // "A:50, B:30, C:20"
-    return text.split(/[,\\n]/).map(s => s.trim()).filter(Boolean).map(s => {
-      const [name, pct] = s.split(":").map(x => x.trim());
-      return { name, pct: parseFloat((pct || "0").replace('%','')) || 0 };
-    });
+  // 참가자 파서: "이름"만 있으면 남은 %를 동일분배, "이름:10%"는 고정
+  function parseParticipantsSmart(text) {
+    const tokens = text.split(/[,\\n]/).map(s => s.trim()).filter(Boolean);
+    const explicit = [], implicit = [];
+    for (const t of tokens) {
+      if (t.includes(':')) {
+        const [nameRaw, pctRaw] = t.split(':');
+        const name = (nameRaw||'').trim();
+        const pct = parseFloat((pctRaw||'').replace('%','').trim());
+        if (name && !isNaN(pct)) explicit.push({name, pct});
+      } else {
+        implicit.push({name: t});
+      }
+    }
+    const sumExplicit = explicit.reduce((s,x)=>s+x.pct,0);
+    const remaining = Math.max(0, 100 - sumExplicit);
+    const each = implicit.length ? (remaining / implicit.length) : 0;
+    const parts = [...explicit, ...implicit.map(x => ({name:x.name, pct: each}))];
+    return { parts, sumExplicit, remaining };
   }
 
   function parseExchangeTiers(text) {
-    // lines: "999999:6" → {limit:999999, rate:0.06}
     const lines = text.split(/\\n/).map(l => l.trim()).filter(Boolean);
     return lines.map(l => {
       const [limitStr, rateStr] = l.split(":").map(x => x.trim());
@@ -217,16 +231,12 @@ Infinity:4</textarea>
   }
 
   function rateForAmount(tiers, amount) {
-    for (const t of tiers) {
-      if (amount <= t.limit) return t.rate;
-    }
+    for (const t of tiers) if (amount <= t.limit) return t.rate;
     return tiers.length ? tiers[tiers.length - 1].rate : 0;
   }
 
   function minimizeExchangeNet(amount, tiers, splits) {
-    // 그리디: 큰 단위부터 나눠서 각 조각에 해당 요율 적용 → 순수령 합계
-    let remaining = Math.floor(amount);
-    let net = 0;
+    let remaining = Math.floor(amount), net = 0;
     const units = splits.map(s => parseInt(s.trim(),10)).filter(Boolean);
     for (const unit of units) {
       while (remaining >= unit) {
@@ -242,91 +252,167 @@ Infinity:4</textarea>
     return net;
   }
 
+  function buildHeader(mode) {
+    const thead = document.querySelector('#resultTable thead');
+    thead.innerHTML = '';
+    const tr = document.createElement('tr');
+    ['참가자','비율','배정액'].forEach((name,idx)=>{
+      const th=document.createElement('th'); th.textContent=name;
+      if (idx===0) th.style.textAlign='left';
+      tr.appendChild(th);
+    });
+    const modeCols = {
+      exchange: ['교환(직거래) 수령'],
+      parcel_normal: ['택배 일반 수령'],
+      parcel_express: ['택배 특급 수령'],
+      all: ['교환(직거래) 수령','택배 일반 수령','택배 특급 수령']
+    }[mode];
+    modeCols.forEach(name=>{ const th=document.createElement('th'); th.textContent=name; tr.appendChild(th); });
+    thead.appendChild(tr);
+  }
+
   function compute() {
     const total = Math.floor(Number(document.getElementById('totalAmount').value) || 0);
-    const parts = parseParticipants(document.getElementById('participants').value);
+    const smart = parseParticipantsSmart(document.getElementById('participants').value);
     const tiers = parseExchangeTiers(document.getElementById('exchangeTiers').value);
     const splits = document.getElementById('splitUnits').value.split(/[,\\s]+/);
     const flatNormal = Math.floor(Number(document.getElementById('parcelFlatNormal').value) || 0);
     const flatExpress = Math.floor(Number(document.getElementById('parcelFlatExpress').value) || 0);
+    const mode = document.getElementById('mode').value;
+    const parcelChargeMode = document.getElementById('parcelChargeMode').value;
 
-    if (!total || !parts.length) { alert("총 금액과 참가자 비율을 확인하세요."); return; }
-    const pctSum = parts.reduce((s,p)=>s+p.pct,0);
-    if (Math.abs(pctSum - 100) > 0.001) {
-      if (!confirm(`비율 합계가 ${pctSum}% 입니다. 계속 진행할까요?`)) return;
+    if (!total || !smart.parts.length) { alert("총 금액과 참가자 입력을 확인하세요."); return; }
+    if (smart.sumExplicit > 100 + 1e-6) {
+      if (!confirm(`명시 비율 합계가 ${smart.sumExplicit}% (100% 초과)입니다. 계속할까요?`)) return;
     }
 
-    // 행 구성
+    // 행 데이터
+    const rows = smart.parts.map(p => ({ name:p.name, pct:p.pct, base: Math.floor(total * (p.pct/100)) }));
+
+    // 교환(직거래) — 수신자 부담
+    rows.forEach(r => r.netExchange = minimizeExchangeNet(r.base, tiers, splits));
+
+    // 택배 — 부담 방식 적용
+    const sumBase = rows.reduce((s,r)=>s+r.base,0) || 1;
+    const n = rows.length || 1;
+
+    function applyParcel(flat, field) {
+      if (parcelChargeMode === 'sender') {
+        rows.forEach(r => r[field] = r.base);
+        return { senderCost: flat, note:`발신자 부담` };
+      }
+      if (parcelChargeMode === 'receiver_equal') {
+        const each = flat / n;
+        rows.forEach(r => r[field] = clamp0(r.base - each));
+        return { senderCost: 0, note:`수신자 균등 분담` };
+      }
+      // receiver_proportional
+      rows.forEach(r => {
+        const share = flat * (r.base / sumBase);
+        r[field] = clamp0(r.base - share);
+      });
+      return { senderCost: 0, note:`수신자 비율 분담` };
+    }
+
+    const costN = applyParcel(flatNormal, 'netParcelNormal');
+    const costE = applyParcel(flatExpress, 'netParcelExpress');
+
+    // 렌더
+    buildHeader(mode);
     const tbody = document.querySelector('#resultTable tbody');
     tbody.innerHTML = "";
-    let senderCostNormal = flatNormal; // 고정 수수료는 1회 전송 기준. 필요시 “참가자별 송장 분할” 로직으로 확장 가능
-    let senderCostExpress = flatExpress;
-
-    const rows = [];
-    parts.forEach(p => {
-      const base = Math.floor(total * (p.pct / 100));
-      const netExchange = minimizeExchangeNet(base, tiers, splits);   // 수취인 부담(교환)
-      const netParcelNormal = base;  // 수취인은 전액 받음
-      const netParcelExpress = base;
-
-      rows.push({ name: p.name, pct: p.pct, base, netExchange, netParcelNormal, netParcelExpress });
-    });
-
-    // 표 렌더
     for (const r of rows) {
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${r.name}</td>
-        <td>${r.pct.toFixed(2)}%</td>
-        <td>${fmt(r.base)}</td>
-        <td>${fmt(r.netExchange)}</td>
-        <td>${fmt(r.netParcelNormal)}</td>
-        <td>${fmt(r.netParcelExpress)}</td>
-      `;
+      const baseCells = [r.name, `${r.pct.toFixed(2)}%`, fmt(r.base)];
+      let modeVals = [];
+      if (mode === 'exchange') modeVals = [fmt(r.netExchange)];
+      else if (mode === 'parcel_normal') modeVals = [fmt(r.netParcelNormal)];
+      else if (mode === 'parcel_express') modeVals = [fmt(r.netParcelExpress)];
+      else modeVals = [fmt(r.netExchange), fmt(r.netParcelNormal), fmt(r.netParcelExpress)];
+
+      [...baseCells, ...modeVals].forEach((val, idx) => {
+        const td=document.createElement('td');
+        td.textContent=val;
+        if (idx===0) td.style.textAlign='left';
+        tr.appendChild(td);
+      });
       tbody.appendChild(tr);
     }
-    document.getElementById('senderCostRow').textContent =
-      `발신자 총비용(택배): 일반 ${fmt(senderCostNormal)} | 특급 ${fmt(senderCostExpress)}`;
 
-    // 결과카드 표시 및 캐시
+    const senderNote = (parcelChargeMode==='sender')
+      ? `발신자 총비용(택배): 일반 ${fmt(costN.senderCost)} | 특급 ${fmt(costE.senderCost)}`
+      : `택배 수수료: ${parcelChargeMode==='receiver_equal'?'수신자 균등 분담':'수신자 비율 분담'} (발신자 비용 0)`;
+    document.getElementById('senderCostRow').textContent = senderNote;
+
+    // 상태 저장
     document.getElementById('resultCard').style.display = "block";
-    window.__lastResult = { total, rows, senderCostNormal, senderCostExpress };
+    window.__lastResult = { total, rows, senderCostNormal: costN.senderCost, senderCostExpress: costE.senderCost, mode, parcelChargeMode };
   }
 
   function fillDemo() {
-    document.getElementById('totalAmount').value = 115000000;
-    document.getElementById('participants').value = "리더:40, 딜러:30, 보조:20, 뉴비:10";
+    document.getElementById('totalAmount').value = 120000000;
+    document.getElementById('participants').value = "사람:10%, 동물, 식물, 광물";
     document.getElementById('exchangeTiers').value = "999999:6\\n4999999:5\\n9999999:4\\nInfinity:4";
     document.getElementById('splitUnits').value = "9999999, 4999999, 999999";
     document.getElementById('parcelFlatNormal').value = 5000;
     document.getElementById('parcelFlatExpress').value = 20000;
+    document.getElementById('mode').value = "all";
+    document.getElementById('parcelChargeMode').value = "receiver_equal";
   }
 
+  /* ---- 공유/내보내기 ---- */
   function toMarkdown(res) {
-    const header = `| 참가자 | 비율 | 배정액 | 직거래(교환) 수령 | 택배 일반 수령 | 택배 특급 수령 |
+    const headerAll = `| 참가자 | 비율 | 배정액 | 교환(직거래) 수령 | 택배 일반 수령 | 택배 특급 수령 |
 |---|---:|---:|---:|---:|---:|`;
-    const lines = res.rows.map(r =>
-      `| ${r.name} | ${r.pct.toFixed(2)}% | ${fmt(r.base)} | ${fmt(r.netExchange)} | ${fmt(r.netParcelNormal)} | ${fmt(r.netParcelExpress)} |`
-    );
-    const footer = `\n> 발신자 총비용(택배): 일반 ${fmt(res.senderCostNormal)} | 특급 ${fmt(res.senderCostExpress)}`;
+    const headerOne = `| 참가자 | 비율 | 배정액 | 수령액 |
+|---|---:|---:|---:|`;
+
+    const useAll = res.mode === 'all';
+    const header = useAll ? headerAll : headerOne;
+
+    const lines = res.rows.map(r => {
+      if (useAll) {
+        return `| ${r.name} | ${r.pct.toFixed(2)}% | ${fmt(r.base)} | ${fmt(r.netExchange)} | ${fmt(r.netParcelNormal)} | ${fmt(r.netParcelExpress)} |`;
+      } else {
+        const val = res.mode === 'exchange' ? r.netExchange
+                  : res.mode === 'parcel_normal' ? r.netParcelNormal
+                  : r.netParcelExpress;
+        return `| ${r.name} | ${r.pct.toFixed(2)}% | ${fmt(r.base)} | ${fmt(val)} |`;
+      }
+    });
+
+    const parcelNote =
+      res.parcelChargeMode==='sender' ? '발신자 부담'
+      : res.parcelChargeMode==='receiver_equal' ? '수신자 균등 분담'
+      : '수신자 비율 분담';
+
+    const footer = useAll
+      ? `\n> 택배 수수료: ${parcelNote} · 발신자 비용(일반/특급) ${fmt(res.senderCostNormal)}/${fmt(res.senderCostExpress)}`
+      : (res.mode === 'exchange'
+          ? `\n> 교환(직거래) 기준`
+          : `\n> 택배 수수료: ${parcelNote}`);
+
     return [header, ...lines, footer].join("\\n");
   }
 
   function copyMarkdown() {
     if (!window.__lastResult) { alert("먼저 계산하세요."); return; }
-    const md = toMarkdown(window.__lastResult);
-    navigator.clipboard.writeText(md).then(()=>alert("Markdown 복사 완료! 디스코드에 붙여넣으세요."));
+    navigator.clipboard.writeText(toMarkdown(window.__lastResult)).then(()=>alert("Markdown 복사 완료!"));
   }
 
   function copySummary() {
     if (!window.__lastResult) { alert("먼저 계산하세요."); return; }
-    const res = window.__lastResult;
-    const s = [
-      `총액: ${fmt(res.total)}`,
-      ...res.rows.map(r => `${r.name}(${r.pct.toFixed(2)}%): 직거래 ${fmt(r.netExchange)} / 택배(일반) ${fmt(r.netParcelNormal)} / 택배(특급) ${fmt(r.netParcelExpress)}`),
-      `발신자 총비용(택배): 일반 ${fmt(res.senderCostNormal)} | 특급 ${fmt(res.senderCostExpress)}`
-    ].join("\\n");
-    navigator.clipboard.writeText(s).then(()=>alert("요약 복사 완료!"));
+    const r = window.__lastResult, useAll = r.mode==='all';
+    const lines = [
+      `총액: ${fmt(r.total)}`,
+      `택배 수수료: ${r.parcelChargeMode==='sender'?'발신자 부담':(r.parcelChargeMode==='receiver_equal'?'수신자 균등 분담':'수신자 비율 분담')}`,
+      ...r.rows.map(x=>{
+        if (useAll) return `${x.name}(${x.pct.toFixed(2)}%): 교환 ${fmt(x.netExchange)} / 택배(일반) ${fmt(x.netParcelNormal)} / 택배(특급) ${fmt(x.netParcelExpress)}`;
+        const val = r.mode==='exchange'?x.netExchange:r.mode==='parcel_normal'?x.netParcelNormal:x.netParcelExpress;
+        return `${x.name}(${x.pct.toFixed(2)}%): ${fmt(val)}`;
+      })
+    ];
+    navigator.clipboard.writeText(lines.join("\\n")).then(()=>alert("요약 복사 완료!"));
   }
 
   function copyJSON() {
@@ -337,28 +423,13 @@ Infinity:4</textarea>
 
   function copyDiscordPayload() {
     if (!window.__lastResult) { alert("먼저 계산하세요."); return; }
-    const res = window.__lastResult;
-
-    // Discord Embed(테이블은 markdown으로 표현)
-    const md = toMarkdown(res);
-    const embed = {
-      title: "길드 분배 결과",
-      description: "직거래/택배 시나리오별 수령액 요약\n(교환 수수료는 수신자 부담, 택배 수수료는 발신자 부담)",
-      color: 0x0a7cff,
-      fields: [
-        { name: "표", value: md.slice(0, 1024) } // embed field 제한 보호. 길면 본문 일부만 보냄
-      ],
-      footer: { text: "Made on GitHub Pages · 분배 계산기" }
-    };
-    const payload = { username: "LootShareBot", embeds: [embed] };
-    navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
-      .then(()=>alert("Discord Webhook Payload 복사 완료! GitHub Actions/프록시에 붙여넣으세요."));
+    const md = toMarkdown(window.__lastResult).slice(0, 1900);
+    const payload = { username: "LootSplit Bot", embeds: [{ title: "길드 분배 결과", description: "교환/택배 시나리오별 수령액 요약", color: 0x0a7cff, fields: [{ name: "표", value: md }], footer: { text: "분배 계산기" } }] };
+    navigator.clipboard.writeText(JSON.stringify(payload, null, 2)).then(()=>alert("Discord Webhook Payload 복사 완료!"));
   }
 
   async function exportPNG() {
     if (!window.__lastResult) { alert("먼저 계산하세요."); return; }
-    // 간단한 표 캡쳐: html2canvas 없이도 canvas로 렌더 (간략한 그림으로)
-    // 더 품질 좋게 하려면 html2canvas를 추가하세요.
     const table = document.getElementById('resultTable');
     const rect = table.getBoundingClientRect();
     const scale = Math.min(2, Math.max(1, (window.devicePixelRatio || 1)));
@@ -370,37 +441,28 @@ Infinity:4</textarea>
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0,0,canvas.width,canvas.height);
 
-    // 제목
     ctx.fillStyle = "#0b1220"; ctx.font = "bold 18px Segoe UI, Arial";
     ctx.fillText("길드 분배 결과표", 12, 28);
-    // 아주 단순 텍스트 렌더 (시각 품질은 기본)
     let y = 60;
     for (const row of table.querySelectorAll("tr")) {
       let x = 12; y += 22;
       const cells = row.querySelectorAll("th,td");
-      ctx.fillStyle = row.parentElement.tagName === "THEAD" ? "#0a7cff" : "#0b1220";
-      ctx.font = row.parentElement.tagName === "THEAD" ? "bold 13px Segoe UI, Arial" : "13px Segoe UI, Arial";
       let idx=0;
       for (const c of cells) {
-        const w = [140, 90, 140, 160, 160, 160][idx] || 140;
+        const w = [140, 90, 140, 170, 170, 170][idx] || 140;
         const text = c.textContent.trim();
         if (row.parentElement.tagName === "THEAD") {
           ctx.fillStyle = "#0a7cff"; ctx.fillRect(x, y-16, w, 24);
-          ctx.fillStyle = "#ffffff";
+          ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px Segoe UI, Arial";
         } else {
-          ctx.fillStyle = "#0b1220";
+          ctx.fillStyle = "#0b1220"; ctx.font = "13px Segoe UI, Arial";
         }
         ctx.fillText(text, x+8, y);
-        x += w;
-        idx++;
+        x += w; idx++;
       }
     }
-
     const url = canvas.toDataURL("image/png");
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "분배결과.png";
-    a.click();
+    const a = document.createElement('a'); a.href = url; a.download = "분배결과.png"; a.click();
   }
 </script>
 </body>
